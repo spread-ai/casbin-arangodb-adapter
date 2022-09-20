@@ -216,6 +216,7 @@ func (a *adapter) loadPolicyLine(line map[string]string, model model.Model) erro
 	}
 
 	model[sec][key].Policy = append(model[sec][key].Policy, tokens)
+	model[sec][key].PolicyMap[strings.Join(tokens, ",")] = len(model[sec][key].Policy) - 1
 	return nil
 }
 

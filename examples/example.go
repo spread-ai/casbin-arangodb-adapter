@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	arango "github.com/adamwasila/arangodb-adapter"
 	casbin "github.com/casbin/casbin/v2"
+	arango "github.com/spread-ai/casbin-arangodb-adapter"
 )
 
 func main() {
