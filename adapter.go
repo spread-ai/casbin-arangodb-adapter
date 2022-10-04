@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	http2 "net/http"
 	"strings"
 
 	arango "github.com/arangodb/go-driver"
@@ -314,12 +313,9 @@ func (a *adapter) AddPolicy(sec string, ptype string, rule []string) (err error)
 	ctx = context.WithValue(ctx, "arangodb-transactionID", id)
 	_, err = a.collection.CreateDocument(ctx, line)
 	if err != nil {
-		var arangoErr *arango.ArangoError
-		if errors.As(err, &arangoErr) {
-			if arangoErr.Code == http2.StatusConflict {
-				err = nil
-				return
-			}
+		if arango.IsConflict(err) {
+			err = nil
+			return
 		}
 		return
 	}
