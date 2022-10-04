@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	http2 "net/http"
 	"strings"
 
 	arango "github.com/arangodb/go-driver"
@@ -288,7 +289,7 @@ func (a *adapter) SavePolicy(model model.Model) error {
 }
 
 // AddPolicy adds a policy rule to the storage.
-func (a *adapter) AddPolicy(sec string, ptype string, rule []string) error {
+func (a *adapter) AddPolicy(sec string, ptype string, rule []string) (err error) {
 	line, err := a.savePolicyLine(ptype, rule)
 	if err != nil {
 		return err
@@ -313,10 +314,17 @@ func (a *adapter) AddPolicy(sec string, ptype string, rule []string) error {
 	ctx = context.WithValue(ctx, "arangodb-transactionID", id)
 	_, err = a.collection.CreateDocument(ctx, line)
 	if err != nil {
-		return err
+		var arangoErr *arango.ArangoError
+		if errors.As(err, &arangoErr) {
+			if arangoErr.Code == http2.StatusConflict {
+				err = nil
+				return
+			}
+		}
+		return
 	}
 
-	return nil
+	return
 }
 
 // RemovePolicy removes a policy rule from the storage.
