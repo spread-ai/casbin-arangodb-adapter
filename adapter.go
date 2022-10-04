@@ -293,8 +293,30 @@ func (a *adapter) AddPolicy(sec string, ptype string, rule []string) error {
 	if err != nil {
 		return err
 	}
-	_, err = a.collection.CreateDocument(context.Background(), line)
-	return err
+
+	ctx := context.Background()
+	id, err := a.database.BeginTransaction(ctx, arango.TransactionCollections{
+		Write: []string{"casbin_rules"},
+	}, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			a.database.AbortTransaction(ctx, id, nil)
+			return
+		}
+		err = a.database.CommitTransaction(ctx, id, nil)
+		return
+	}()
+
+	ctx = context.WithValue(ctx, "arangodb-transactionID", id)
+	_, err = a.collection.CreateDocument(ctx, line)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // RemovePolicy removes a policy rule from the storage.
